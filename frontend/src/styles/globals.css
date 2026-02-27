@@ -1,0 +1,91 @@
+/* src/styles/globals.css */
+
+:root {
+  /* Background layers */
+  --bg-root:    #080a12;
+  --bg-surface: #0f1120;
+  --bg-card:    #131628;
+  --bg-card-hover: #181c32;
+  --bg-input:   #0c0e1a;
+
+  /* Brand colors */
+  --cyan:       #00d4ff;
+  --cyan-dim:   rgba(0, 212, 255, 0.12);
+  --cyan-glow:  rgba(0, 212, 255, 0.35);
+  --purple:     #7c3aed;
+  --purple-mid: #9b5de5;
+  --purple-dim: rgba(124, 58, 237, 0.15);
+  --green:      #00e5a0;
+  --green-dim:  rgba(0, 229, 160, 0.1);
+  --amber:      #f59e0b;
+
+  /* Text */
+  --text-primary:   #eef0f8;
+  --text-secondary: #8892aa;
+  --text-muted:     #4f566b;
+
+  /* Borders */
+  --border:       rgba(255, 255, 255, 0.07);
+  --border-focus: rgba(0, 212, 255, 0.4);
+
+  /* Fonts */
+  --font-sans: 'Sora', sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+
+  /* Spacing */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+
+  /* Transitions */
+  --ease: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+}
+
+body {
+  background: var(--bg-root);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  line-height: 1.6;
+  overflow-x: hidden;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar { width: 6px; }
+::-webkit-scrollbar-track { background: var(--bg-root); }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+
+/* Selection */
+::selection {
+  background: var(--cyan-dim);
+  color: var(--cyan);
+}
+
+/* Focus outline */
+:focus-visible {
+  outline: 2px solid var(--cyan);
+  outline-offset: 2px;
+}
+
+/* Utility classes */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0,0,0,0);
+  white-space: nowrap;
+}
