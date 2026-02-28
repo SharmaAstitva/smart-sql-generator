@@ -1,11 +1,9 @@
 # ============================================================
 # services/db_service.py
-# Handles MySQL connections — both from credentials and .sql files
+# Handles MySQL (TiDB) connections — cloud compatible
 # ============================================================
+
 import mysql.connector
-import tempfile
-import subprocess
-import os
 from typing import Optional
 
 # In-memory cache: stores the last active connection config
@@ -25,49 +23,72 @@ def set_connection_config(host: str, port: int, user: str, password: str, databa
 
 
 def get_connection():
-    """Return a live MySQL connection using cached config."""
+    """Return a live MySQL (TiDB) connection using cached config."""
     if not _active_db_config:
         raise ConnectionError("No database connection configured. Please connect first.")
-    return mysql.connector.connect(**_active_db_config)
+
+    return mysql.connector.connect(
+        host=_active_db_config["host"],
+        port=_active_db_config["port"],
+        user=_active_db_config["user"],
+        password=_active_db_config["password"],
+        database=_active_db_config["database"],
+        ssl_disabled=False  # Required for TiDB Cloud
+    )
 
 
-def import_sql_file(sql_content: str, database: str, host: str = "localhost",
-                    port: int = 3306, user: str = "root", password: str = "") -> str:
+def import_sql_file(
+    sql_content: str,
+    database: str,
+    host: str,
+    port: int,
+    user: str,
+    password: str
+) -> str:
     """
-    Create a new DB from a .sql file upload.
-    Steps:
-      1. Create the database if it doesn't exist.
-      2. Write the SQL to a temp file.
-      3. Run `mysql` CLI to import it.
-    Returns the database name on success.
+    Import SQL content directly using mysql connector (cloud safe).
+    No CLI usage. Works on Render.
     """
-    # 1. Create database
-    conn = mysql.connector.connect(host=host, port=port, user=user, password=password)
+
+    # 1️⃣ Create database if it doesn't exist
+    conn = mysql.connector.connect(
+        host=host,
+        port=port,
+        user=user,
+        password=password,
+        ssl_disabled=False
+    )
+
     cursor = conn.cursor()
     cursor.execute(f"CREATE DATABASE IF NOT EXISTS `{database}`")
     conn.commit()
     cursor.close()
     conn.close()
 
-    # 2. Write to temp file
-    with tempfile.NamedTemporaryFile(suffix=".sql", mode="w", delete=False) as f:
-        f.write(sql_content)
-        tmp_path = f.name
+    # 2️⃣ Connect to the new database
+    conn = mysql.connector.connect(
+        host=host,
+        port=port,
+        user=user,
+        password=password,
+        database=database,
+        ssl_disabled=False
+    )
 
-    # 3. Import using mysql CLI
-    cmd = ["mysql", f"-h{host}", f"-P{port}", f"-u{user}"]
-    if password:
-        cmd.append(f"-p{password}")
-    cmd.append(database)
+    cursor = conn.cursor()
 
-    with open(tmp_path, "r") as sql_file:
-        result = subprocess.run(cmd, stdin=sql_file, capture_output=True, text=True)
+    # 3️⃣ Execute SQL statements one by one
+    statements = sql_content.split(";")
+    for statement in statements:
+        statement = statement.strip()
+        if statement:
+            cursor.execute(statement)
 
-    os.unlink(tmp_path)  # Clean up temp file
+    conn.commit()
+    cursor.close()
+    conn.close()
 
-    if result.returncode != 0:
-        raise RuntimeError(f"MySQL import failed: {result.stderr}")
-
-    # Cache the connection for future requests
+    # Cache connection for future use
     set_connection_config(host, port, user, password, database)
+
     return database
